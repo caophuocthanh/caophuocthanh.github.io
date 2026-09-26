@@ -56,21 +56,38 @@
   }
   function text(id, value) { document.getElementById(id).textContent = value; }
 
-  // #u=<UID percent-encoded>&s=<vtodo|vtodo-dev>  (D4.14)
+  // #u=<UID percent-encoded>&s=<vtodo|vtodo-dev>[&b=sent]  (D4.14)
   var params = {};
   location.hash.replace(/^#/, "").split("&").forEach(function (pair) {
     var i = pair.indexOf("=");
     if (i > 0) params[pair.slice(0, i)] = pair.slice(i + 1);
   });
+  // REPLY emails go to the organizer: their task lives in Sent, not Inbox.
+  var tab = params.b === "sent" ? "sent" : "inbox";
+  if (tab === "sent") {
+    text("hint", en ? "Didn't open? Open the VTodo app — this update is in Sent."
+                    : "Không mở được? Mở app VTodo — cập nhật này nằm trong Sent.");
+    text("invalid", en ? "This link isn't valid. Open the VTodo app — the task is in Sent."
+                       : "Link này không hợp lệ. Mở app VTodo — task nằm trong Sent.");
+  }
   var scheme = params.s === "vtodo-dev" ? "vtodo-dev" : "vtodo";   // only our two schemes (D4.3)
   var uid = null;
   try { uid = params.u ? decodeURIComponent(params.u) : null; } catch (e) { uid = null; }
-  // Same rule as the app (D4.13): 1…255 chars, no whitespace/control characters.
-  var valid = uid && uid.length <= 255 && !/[\s\u0000-\u001F\u007F]/.test(uid);
+  // Same rule as the app (D4.13): 1…255 characters (counted like Swift, by grapheme — not UTF-16
+  // units, or a UID full of emoji would be rejected here but accepted by the app), no whitespace.
+  function charCount(text) {
+    if (typeof Intl !== "undefined" && Intl.Segmenter) {
+      var n = 0, it = new Intl.Segmenter().segment(text)[Symbol.iterator]();
+      while (!it.next().done) n++;
+      return n;
+    }
+    return Array.from(text).length;
+  }
+  var valid = uid && charCount(uid) <= 255 && !/[\s\u0000-\u001F\u007F]/.test(uid);
   if (!valid) {
     document.getElementById("invalid").hidden = false;
     document.getElementById("hint").hidden = true;
-    document.getElementById("open").href = scheme + "://inbox";
+    document.getElementById("open").href = scheme + "://" + tab;
     return;
   }
   var target = scheme + "://task/" + encodeURIComponent(uid);
