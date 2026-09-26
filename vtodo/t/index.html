@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Mở trong VTodo</title>
+<!--
+  Fallback for VTodo email links (D4.14, D4.16). Normally iOS opens the app straight from the
+  https link (Universal Link) and this page never loads. When it does load (e.g. Gmail's in-app
+  browser), it hands the task over to the app with vtodo:// — allowed from a web page, unlike
+  inside Gmail's email view.
+  Privacy: the task UID is in the #fragment, which browsers never send to the server. No cookies,
+  no scripts or fonts from elsewhere, nothing stored.
+-->
+<style>
+  :root { color-scheme: light dark; --bg:#F2F2F7; --card:#FFFFFF; --text:#000000; --muted:#3C3C43; --primary:#0066CC; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#000000; --card:#1C1C1E; --text:#FFFFFF; --muted:#EBEBF5; --primary:#4DA3FF; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px;
+         background:var(--bg); color:var(--text); font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  main { width:100%; max-width:420px; background:var(--card); border-radius:16px; padding:28px 24px; text-align:center; }
+  .brand { color:var(--primary); font-weight:700; font-size:13px; letter-spacing:.5px; margin:0 0 16px; }
+  h1 { font-size:22px; margin:0 0 8px; }
+  p { color:var(--muted); margin:0 0 20px; }
+  a.button { display:block; padding:16px; border-radius:14px; background:var(--primary); color:#FFFFFF; font-weight:600;
+             font-size:17px; text-decoration:none; }
+  a.secondary { display:inline-block; margin-top:16px; color:var(--primary); text-decoration:none; font-size:15px; }
+  .hint { font-size:13px; margin:20px 0 0; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <p class="brand">VTODO</p>
+  <h1 id="title">Mở task trong VTodo</h1>
+  <p id="lead">Bấm nút bên dưới để mở task trong app VTodo.</p>
+  <a id="open" class="button" href="vtodo://inbox">Mở trong VTodo</a>
+  <a id="store" class="secondary" href="https://apps.apple.com/app/vtodo">Chưa có VTodo? Tải trên App Store</a>
+  <p id="hint" class="hint">Không mở được? Mở app VTodo — task nằm trong Inbox.</p>
+  <p id="invalid" class="hint" hidden>Link này không hợp lệ. Mở app VTodo — task nằm trong Inbox.</p>
+</main>
+<script>
+(function () {
+  var en = !/^vi\b/i.test(navigator.language || "");
+  if (en) {
+    document.documentElement.lang = "en";
+    document.title = "Open in VTodo";
+    text("title", "Open the task in VTodo");
+    text("lead", "Tap the button below to open the task in the VTodo app.");
+    text("open", "Open in VTodo");
+    text("store", "Don't have VTodo? Get it on the App Store");
+    text("hint", "Didn't open? Open the VTodo app — the task is in Inbox.");
+    text("invalid", "This link isn't valid. Open the VTodo app — the task is in Inbox.");
+  }
+  function text(id, value) { document.getElementById(id).textContent = value; }
+
+  // #u=<UID percent-encoded>&s=<vtodo|vtodo-dev>  (D4.14)
+  var params = {};
+  location.hash.replace(/^#/, "").split("&").forEach(function (pair) {
+    var i = pair.indexOf("=");
+    if (i > 0) params[pair.slice(0, i)] = pair.slice(i + 1);
+  });
+  var scheme = params.s === "vtodo-dev" ? "vtodo-dev" : "vtodo";   // only our two schemes (D4.3)
+  var uid = null;
+  try { uid = params.u ? decodeURIComponent(params.u) : null; } catch (e) { uid = null; }
+  // Same rule as the app (D4.13): 1…255 chars, no whitespace/control characters.
+  var valid = uid && uid.length <= 255 && !/[\s\u0000-\u001F\u007F]/.test(uid);
+  if (!valid) {
+    document.getElementById("invalid").hidden = false;
+    document.getElementById("hint").hidden = true;
+    document.getElementById("open").href = scheme + "://inbox";
+    return;
+  }
+  var target = scheme + "://task/" + encodeURIComponent(uid);
+  document.getElementById("open").href = target;
+  // One automatic attempt; browsers that need a tap keep the button.
+  setTimeout(function () { location.href = target; }, 300);
+})();
+</script>
+</body>
+</html>

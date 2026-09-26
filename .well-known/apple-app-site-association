@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["8AYMHH2W3E.app.cuimia.VTodo", "8AYMHH2W3E.app.cuimia.VTodo.dev"],
+        "components": [
+          { "/": "/vtodo/t", "comment": "Task link from a VTodo email (D4.14); the UID is in the #fragment" },
+          { "/": "/vtodo/t/*", "comment": "Same, with a trailing slash" }
+        ]
+      }
+    ]
+  }
+}
